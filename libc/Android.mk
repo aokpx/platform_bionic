@@ -185,7 +185,6 @@ libc_common_src_files := \
 	string/strcasecmp.c \
 	string/strcasestr.c \
 	string/strcat.c \
-	string/strchr.c \
 	string/strcoll.c \
 	string/strcspn.c \
 	string/strdup.c \
@@ -382,20 +381,10 @@ libc_common_src_files += \
 	arch-arm/bionic/memset.S \
 	arch-arm/bionic/setjmp.S \
 	arch-arm/bionic/sigsetjmp.S \
-	arch-arm/bionic/strcpy.S \
 	arch-arm/bionic/strcmp.S \
 	arch-arm/bionic/syscall.S \
 	string/strncmp.c \
 	unistd/socketcalls.c
-
-# String routines optimized for ARMv7
-ifeq ($(ARCH_ARM_HAVE_ARMV7A),true)
-libc_common_src_files += arch-arm/bionic/memchr.S
-libc_common_src_files += arch-arm/bionic/strlen-armv7.S
-else
-libc_common_src_files += string/memchr.c
-libc_common_src_files += arch-arm/bionic/strlen.c.arm
-endif
 
 # We have a special memcpy for A15 currently
 ifeq ($(TARGET_ARCH_VARIANT_CPU),cortex-a15)
@@ -446,6 +435,27 @@ libc_arch_static_src_files := \
 
 libc_arch_dynamic_src_files := \
 	arch-arm/bionic/exidx_dynamic.c
+
+ifeq ($(ARCH_ARM_HAVE_ARMV7A),true)
+  libc_common_src_files += \
+    arch-arm/bionic/memchr.S \
+    arch-arm/bionic/armv7/strchr.S \
+    arch-arm/bionic/armv7/strcpy.c \
+    arch-arm/bionic/armv7/strlen.S
+else
+  libc_common_src_files += \
+    string/memchr.c \
+    string/strchr.c \
+    arch-arm/bionic/strcpy.S \
+    arch-arm/bionic/strlen.c.arm
+endif
+
+else # arm
+
+libc_common_src_files += \
+	string/memchr.c \
+	string/strchr.c
+
 endif # arm
 
 ifeq ($(TARGET_ARCH),x86)
@@ -593,8 +603,6 @@ ifeq ($(TARGET_ARCH),arm)
   ifeq ($(ARCH_ARM_USE_NON_NEON_MEMCPY),true)
     libc_common_cflags += -DARCH_ARM_USE_NON_NEON_MEMCPY
   endif
-
-
   ifeq ($(ARCH_ARM_HAVE_NEON_UNALIGNED_ACCESS),true)
     libc_common_cflags += -DNEON_UNALIGNED_ACCESS
   endif
