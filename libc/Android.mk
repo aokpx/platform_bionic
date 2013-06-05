@@ -378,20 +378,38 @@ libc_common_src_files += \
 	arch-arm/bionic/tgkill.S \
 	arch-arm/bionic/memcmp.S \
 	arch-arm/bionic/memcmp16.S \
-	arch-arm/bionic/memset.S \
 	arch-arm/bionic/setjmp.S \
 	arch-arm/bionic/sigsetjmp.S \
-	arch-arm/bionic/strcmp.S \
 	arch-arm/bionic/syscall.S \
 	string/strncmp.c \
 	unistd/socketcalls.c
 
-# We have a special memcpy for A15 currently
-ifeq ($(TARGET_ARCH_VARIANT_CPU),cortex-a15)
-libc_common_src_files += arch-arm/bionic/memcpy-a15.S
-else
-libc_common_src_files += arch-arm/bionic/memcpy.S
+ifeq ($(strip $(TARGET_ARCH_VARIANT_CPU)),)
+$(warning TARGET_ARCH_VARIANT_CPU is not defined)
 endif
+
+###########################################################
+## Add cpu specific source files.
+##
+## This can be called multiple times, but it will only add
+## the first source file for each unique $(1).
+## $(1): Unique identifier to identify the cpu variant
+##       implementation.
+## $(2): Cpu specific source file.
+###########################################################
+
+define libc-add-cpu-variant-src
+$(if $(filter true,$(_LIBC_ARCH_CPU_VARIANT_HAS_$(1))), \
+       , \
+     $(eval _LIBC_ARCH_CPU_VARIANT_HAS_$(1) := true) \
+     $(eval _LIBC_ARCH_CPU_VARIANT_SRC_FILE.$(1) := $(2)) \
+     $(eval _LIBC_ARCH_CPU_VARIANT_SRC_FILES += $(2)) \
+)
+endef
+
+_LIBC_ARCH_CPU_VARIANT_SRC_FILES :=
+include bionic/libc/arch-$(TARGET_ARCH)/$(TARGET_ARCH).mk
+libc_common_src_files += $(_LIBC_ARCH_CPU_VARIANT_SRC_FILES)
 
 # Check if we want a neonized version of memmove instead of the
 # current ARM version
@@ -615,6 +633,7 @@ ifeq ($(TARGET_ARCH),arm)
 
   # Add in defines to activate SCORPION_NEON_OPTIMIZATION
   ifeq ($(TARGET_USE_SCORPION_BIONIC_OPTIMIZATION),true)
+    libc_common_cflags += -DCODEAURORA_MEM_ROUTINES
     libc_common_cflags += -DSCORPION_NEON_OPTIMIZATION
     ifeq ($(TARGET_USE_SCORPION_PLD_SET),true)
       libc_common_cflags += -DPLDOFFS=$(TARGET_SCORPION_BIONIC_PLDOFFS)
@@ -626,6 +645,7 @@ ifeq ($(TARGET_ARCH),arm)
   endif
   # Add in defines to activate KRAIT_NEON_OPTIMIZATION
   ifeq ($(TARGET_USE_KRAIT_BIONIC_OPTIMIZATION),true)
+    libc_common_cflags += -DCODEAURORA_MEM_ROUTINES
     libc_common_cflags += -DKRAIT_NEON_OPTIMIZATION
     ifeq ($(TARGET_USE_KRAIT_PLD_SET),true)
       libc_common_cflags += -DPLDOFFS=$(TARGET_KRAIT_BIONIC_PLDOFFS)
