@@ -184,7 +184,6 @@ libc_common_src_files := \
 	string/memswap.c \
 	string/strcasecmp.c \
 	string/strcasestr.c \
-	string/strcat.c \
 	string/strcoll.c \
 	string/strcspn.c \
 	string/strdup.c \
@@ -458,15 +457,11 @@ libc_arch_dynamic_src_files := \
 ifeq ($(ARCH_ARM_HAVE_ARMV7A),true)
   libc_common_src_files += \
     arch-arm/bionic/memchr.S \
-    arch-arm/bionic/armv7/strchr.S \
-    arch-arm/bionic/armv7/strcpy.c \
-    arch-arm/bionic/armv7/strlen.S
+    arch-arm/bionic/armv7/strchr.S
 else
   libc_common_src_files += \
     string/memchr.c \
-    string/strchr.c \
-    arch-arm/bionic/strcpy.S \
-    arch-arm/bionic/strlen.c.arm
+    string/strchr.c
 endif
 
 else # arm
